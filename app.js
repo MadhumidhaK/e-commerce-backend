@@ -19,7 +19,14 @@ const app = express();
 const port = 8080;
 app.use(helmet());
 
-app.use(cors());
+// app.use(cors());
+app.use(function (req, res, next) {
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || "*");
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE,PATCH');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    next();
+  });
 
 app.use(bodyParser.json());
 app.use(cookieParser());
