@@ -1,7 +1,6 @@
 const fs = require('fs');
 const multer = require('multer');
 const { body, validationResult } = require('express-validator');
-const multerS3 = require('multer-s3');
 const aws = require('aws-sdk');
 
 
@@ -22,14 +21,6 @@ aws.config.update({
 const s3 = new aws.S3();
 
 const storage = multer.memoryStorage();
-// multerS3({
-//         s3: s3,
-//         bucket: 'happyshop',
-//         key: function (req, file, cb) {
-//             console.log(file);
-//             cb(null, Date.now() + file.originalname); //use Date.now() for unique file keys
-//         }
-//     })
 
 const checkFileType = function(req, file, cb){
         if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/jpg' || file.mimetype === 'image/png'){
@@ -92,6 +83,12 @@ exports.addProduct = [
                                 error.statusCode = 422
                                 throw error;
                         }
+                         
+                        if(!req.file){
+                                const error = new Error("Please upload an Image");
+                                error.statusCode = 406;
+                                throw error;
+                        }
                         console.log(req.file)
                         var params = {
                                 ACL: 'public-read',
@@ -107,9 +104,6 @@ exports.addProduct = [
                                         return next( error);
                                 }
                                 if(data){
-                                        console.log("s3file");
-                                        console.log(data);
-                                        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>.");
                                         const locationUrl = data.Location;
                                         const newProduct = new Product({
                                                 name: req.body.name,
@@ -121,7 +115,6 @@ exports.addProduct = [
                                                 productImage: locationUrl
                                         });
                                         const createdProduct = await newProduct.save();
-                                        console.log(createdProduct);
                                         res.status(201).json({
                                                 id: createdProduct._id,
                                                 name: createdProduct.name,
@@ -145,12 +138,9 @@ exports.addProduct = [
 exports.getProducts = async (req, res, next) => {
         try {
                 let page = req.query.page;
-                
-                
                 if(page < 1){
                         page = 1;
                 }
-
                 let totalItems = await Product.countDocuments({});
                 if(totalItems < 1){
                         const error = new Error("No Products Found");
@@ -190,7 +180,6 @@ exports.getSellersProducts = async (req, res, next) => {
                 if(page < 1){
                         page = 1;
                 }
-
                 let totalItems = await Product.countDocuments({ seller: seller._id});
                 if(totalItems < 1){
                         const error = new Error("No Products Found");
@@ -397,15 +386,30 @@ exports.updateImage = [upload.single('productImage') ,
                                 error.statusCode = 406;
                                 throw error;
                         }
-                        console.log(product)
-                        // deleteFile(product.productImage);
-                        product.productImage = req.file.path;
-                        await product.save();
-                        await (await product.populate('seller', '_id brandName brand').execPopulate()).populate('category').execPopulate()
-                        console.log(product)
 
-                        return res.status(200).json({
-                                product: product
+                        var params = {
+                                ACL: 'public-read',
+                                Bucket:'happyshop',
+                                Body: req.file.buffer,
+                                Key: `uploads/${req.file.originalname + Date.now()}`
+                              };
+                        s3.upload(params, async function(err, data){
+                                if(err){
+                                        console.log(err)
+                                        const error = new Error("Error while uploading image");
+                                        error.statusCode = 406;
+                                        return next( error);
+                                }
+                                if(data){
+                                        product.productImage = data.Location;
+                                        await product.save();
+                                        await (await product.populate('seller', '_id brandName brand').execPopulate()).populate('category').execPopulate()
+                                        console.log(product)
+
+                                        return res.status(200).json({
+                                                product: product
+                                        })
+                                }
                         })
                 } catch (error) {
                         next(error);                
