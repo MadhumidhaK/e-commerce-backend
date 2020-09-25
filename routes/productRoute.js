@@ -12,8 +12,8 @@ route.get('/brand/:brand', product.getSellersProducts);
 route.get('/category/:name', product.getCategoryProducts);
 route.get('/categories', product.getCategories);
 route.get('/categorieslist', product.getCategoriesList);
-route.patch("/updateimage/:id", isAuth, product.updateImage);
-route.patch("/update/:id", isAuth, product.updateProduct);
+route.put("/updateimage/:id", isAuth, product.updateImage);
+route.put("/update/:id", isAuth, product.updateProduct);
 route.delete("/delete/:id", isAuth, product.deleteProduct);
 route.get("/p/:id", product.getProduct);
 

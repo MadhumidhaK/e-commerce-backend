@@ -1,5 +1,9 @@
+const fs = require('fs');
 const multer = require('multer');
 const { body, validationResult } = require('express-validator');
+const multerS3 = require('multer-s3');
+const aws = require('aws-sdk');
+
 
 const Product = require('../models/product');
 const User = require('../models/user');
@@ -7,14 +11,26 @@ const Category = require('../models/category');
 const { deleteFile } = require('../utils/fileService');
 
 const ITEMS_PER_PAGE = 3;
-const storage = multer.diskStorage({
-        destination: function(req, file, cb){
-                cb(null, './uploads/');
-        },
-        filename: function(req, file, cb){
-                cb(null, Date.now() + file.originalname)
-        }
-})
+
+
+aws.config.update({ 
+        secretAccessKey: process.env.AWS_SECRET_KEY,
+        accessKeyId: process.env.AWS_KEY_ID,
+        region: 'us-east-2' // region of your bucket
+    });
+    
+const s3 = new aws.S3();
+
+const storage = multer.memoryStorage();
+// multerS3({
+//         s3: s3,
+//         bucket: 'happyshop',
+//         key: function (req, file, cb) {
+//             console.log(file);
+//             cb(null, Date.now() + file.originalname); //use Date.now() for unique file keys
+//         }
+//     })
+
 const checkFileType = function(req, file, cb){
         if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/jpg' || file.mimetype === 'image/png'){
                 cb(null, true);
@@ -44,15 +60,10 @@ exports.addProduct = [
                 return true;
         }),
         body('description', "Please enter a description of atleast 8 characters.").isLength({ min: 8}),
-        // body('productImage').isString(),
-        
         async function(req, res, next){
-                try{    
+                try{    console.log(' Add Product')
                         const errors = validationResult(req);
                         if (!errors.isEmpty()) {
-                                if(req.file){
-                                        deleteFile(req.file.path);
-                                }
                                 const error = new Error("Validation Error");
                                 error.data = errors.array();
                                 error.statusCode = 422
@@ -60,33 +71,19 @@ exports.addProduct = [
                         }
                         const seller = await User.findOne({ email: req.sessionUser.email });
                         if(!seller){
-                                if(req.file){
-                                        deleteFile(req.file.path);
-                                }
                                 const error = new Error("User Shoud be logged in to perform this action. Please login.");
                                 error.statusCode = 401;
                                 throw error; 
                         }
                         console.log(seller)
                         if(!seller.isSeller){
-                                if(req.file){
-                                        deleteFile(req.file.path);
-                                }
                                 const error = new Error("You are not registered as a seller. Please register as a seller to continue.");
                                 error.statusCode = 403;
-                                throw error;
-                        }
-                        if(!req.file){
-                                const error = new Error("Please upload an Image");
-                                error.statusCode = 406;
                                 throw error;
                         }
 
                         const categoryObject = await Category.findById(req.body.category);
                         if(!categoryObject){
-                                if(req.file){
-                                        deleteFile(req.file.path);
-                                }
                                 const error = new Error("Validation Error");
                                 error.data = [{
                                         param: "category",
@@ -95,28 +92,48 @@ exports.addProduct = [
                                 error.statusCode = 422
                                 throw error;
                         }
-
-                        const newProduct = new Product({
-                                name: req.body.name,
-                                availableQuantity: req.body.availableQuantity,
-                                category: req.body.category,
-                                price: req.body.price,
-                                description: req.body.description,
-                                seller: seller._id,
-                                productImage: req.file.path
+                        console.log(req.file)
+                        var params = {
+                                ACL: 'public-read',
+                                Bucket:'happyshop',
+                                Body: req.file.buffer,
+                                Key: `uploads/${req.file.originalname + Date.now()}`
+                              };
+                        return s3.upload(params, async function(err, data){
+                                if(err){
+                                        const error = new Error("Error while uploading image");
+                                        error.statusCode = 406;
+                                        throw error;
+                                }
+                                if(data){
+                                        console.log("s3file");
+                                        console.log(data);
+                                        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>.");
+                                        const locationUrl = data.Location;
+                                        const newProduct = new Product({
+                                                name: req.body.name,
+                                                availableQuantity: req.body.availableQuantity,
+                                                category: req.body.category,
+                                                price: req.body.price,
+                                                description: req.body.description,
+                                                seller: seller._id,
+                                                productImage: locationUrl
+                                        });
+                                        const createdProduct = await newProduct.save();
+                                        console.log(createdProduct);
+                                        res.status(201).json({
+                                                id: createdProduct._id,
+                                                name: createdProduct.name,
+                                                availableQuantity: createdProduct.availableQuantity,
+                                                category: createdProduct.category,
+                                                price: createdProduct.price,
+                                                description: createdProduct.description,
+                                                seller: createdProduct.seller,
+                                                productImage: createdProduct.productImage
+                                        })
+                                }
+                                
                         });
-                        const createdProduct = await newProduct.save();
-                        console.log(createdProduct);
-                        res.status(201).json({
-                                id: createdProduct._id,
-                                name: createdProduct.name,
-                                availableQuantity: createdProduct.availableQuantity,
-                                category: createdProduct.category,
-                                price: createdProduct.price,
-                                description: createdProduct.description,
-                                seller: createdProduct.seller,
-                                productImage: createdProduct.productImage
-                        })
                 }catch(error){
                         next(error);
                 }
