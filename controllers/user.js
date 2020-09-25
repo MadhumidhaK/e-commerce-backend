@@ -157,7 +157,7 @@ const sendVerificationMail = async (email, token, name) => {
         html: `
             <h3>Hi ${name},</h3>
             <h3>Welcome to Happy Shop 😊</h3>
-            <p><b>Please click <a href='http://localhost:3002/verify/${token}' target='_blank'>this</a> link below to verify your email.</b> Link will expire in an hour</p>
+            <p><b>Please click <a href='https://happy-shop.netlify.app/verify/${token}' target='_blank'>this</a> link below to verify your email.</b> Link will expire in an hour</p>
 
             <p>
             Have a Happy shopping.
@@ -406,7 +406,7 @@ exports.forgotPassword = [
                 subject: 'Reset Your Password',
                 html: `
                     <h3>Hi, ${user.firstName}!</h3>
-                    <p><b>Please click <a href='http://localhost:3002/reset/${token}' target='_blank'>this</a> link to reset your password.</b> Link will expire in an hour</p>
+                    <p><b>Please click <a href='https://happy-shop.netlify.app/reset/${token}' target='_blank'>this</a> link to reset your password.</b> Link will expire in an hour</p>
         
                     <p>
                     Happy Day.  
