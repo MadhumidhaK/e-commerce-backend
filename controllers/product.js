@@ -99,11 +99,12 @@ exports.addProduct = [
                                 Body: req.file.buffer,
                                 Key: `uploads/${req.file.originalname + Date.now()}`
                               };
-                        return s3.upload(params, async function(err, data){
+                        s3.upload(params, async function(err, data){
                                 if(err){
+                                        console.log(err)
                                         const error = new Error("Error while uploading image");
                                         error.statusCode = 406;
-                                        throw error;
+                                        return next( error);
                                 }
                                 if(data){
                                         console.log("s3file");
