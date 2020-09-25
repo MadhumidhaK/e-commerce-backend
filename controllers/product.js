@@ -190,7 +190,7 @@ exports.getSellersProducts = async (req, res, next) => {
                 if(page > pagesCount){
                         page = pagesCount;
                 }
-                const sellersProducts  = await Product.find({ seller: seller._id })
+                const sellersProducts  = await Product.find({ seller: seller._id, availableQuantity: {$gt : 0} })
                                                 .skip((page - 1) * ITEMS_PER_PAGE).limit(ITEMS_PER_PAGE)
                                                 .populate('seller', '_id brandName brand').populate('category');
                 res.status(200).json({
@@ -218,7 +218,7 @@ exports.getCategoryProducts = async (req, res, next) => {
                 if(page < 1){
                         page = 1;
                 }
-                let totalItems = await Product.countDocuments({ category: category._id });
+                let totalItems = await Product.countDocuments({ category: category._id, availableQuantity: {$gt : 0} });
                 if(totalItems < 1){
                        const error = new Error("No Products Found");
                        error.statusCode = 404;
