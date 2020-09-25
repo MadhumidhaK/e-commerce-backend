@@ -351,8 +351,16 @@ exports.updateUser = [
             
             if(req.body.isSeller){
                 user.isSeller = req.body.isSeller;
+                brand = req.body.brandName.toLowerCase().replace(" ", "-");
+                const existingBrand = await User.findOne({brand: brand});
+                if(existingBrand){
+                    console.log(existingBrand);
+                    const error = new Error("Brand already exists!");
+                    error.statusCode = 409;
+                    throw error;
+                }
                 user.brandName = req.body.brandName;
-                user.brand = req.body.brandName.toLowerCase().replace(" ", "-");
+                user.brand = brand;
             }
             user.firstName = req.body.firstName;
             user.lastName = req.body.lastName;

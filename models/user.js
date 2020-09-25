@@ -30,12 +30,10 @@ const userSchema = new Schema({
         required: true
     },
     brandName: {
-        type: String,
-        unique: true
+        type: String
     },
     brand: {
-        type: String,
-        unique: true
+        type: String
     },
     password:{
         type: String,
