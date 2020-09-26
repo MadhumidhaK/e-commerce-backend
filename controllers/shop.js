@@ -292,7 +292,8 @@ exports.getCart = async (req, res, next) => {
             throw error;
         } 
         const total = user.cart.items.reduce((tot, item) => tot + (parseFloat(item.product.price) * parseInt(item.quantity)), 0);  
-        user.cart.total = total
+        user.cart.total = total;
+        await user.save();
         return res.status(200).send({
             cart: user.cart
         })
