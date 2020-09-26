@@ -291,7 +291,8 @@ exports.getCart = async (req, res, next) => {
             error.code = 801;
             throw error;
         } 
-
+        const total = user.cart.items.reduce((tot, item) => tot + (parseFloat(item.product.price) * parseInt(item.quantity)), 0);  
+        user.cart.total = total
         return res.status(200).send({
             cart: user.cart
         })
