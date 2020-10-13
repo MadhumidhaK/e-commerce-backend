@@ -369,7 +369,7 @@ exports.updateUser = [
                 }
                 brand = req.body.brandName.toLowerCase().replace(" ", "-");
                 const existingBrand = await User.findOne({brand: brand});
-                if(existingBrand){
+                if(existingBrand && existingBrand._id.toString() !== user._id.toString()){
                     console.log(existingBrand);
                     const error = new Error("Validation Error");
                     error.data = [{
