@@ -352,16 +352,24 @@ exports.updateUser = [
             if(req.body.isSeller){
                 user.isSeller = req.body.isSeller;
                 if(req.body.brandName.length < 2){
-                    const error = new Error("Brand name should have atleast 2 characters.");
-                    error.statusCode = 409;
+                    const error = new Error("Validation Error");
+                    error.data = [{
+                        msg: "Brand name should have atleast 2 characters.",
+                        param: "brandName"
+                    }];
+                    error.statusCode = 422;
                     throw error;
                 }
                 brand = req.body.brandName.toLowerCase().replace(" ", "-");
                 const existingBrand = await User.findOne({brand: brand});
                 if(existingBrand){
                     console.log(existingBrand);
-                    const error = new Error("Brand already exists!");
-                    error.statusCode = 409;
+                    const error = new Error("Validation Error");
+                    error.data = [{
+                        msg: "Brand already exists!",
+                        param: "brandName"
+                    }];
+                    error.statusCode = 422;
                     throw error;
                 }
                 user.brandName = req.body.brandName;
