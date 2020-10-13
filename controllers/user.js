@@ -41,6 +41,13 @@ exports.createUser = [
                 error.statusCode = 409;
                 throw error;
             }
+            const existingUserByName = await User.findOne({ firstName: firstName });
+            if(existingUserByName){
+                console.log(existingUserByName);
+                const error = new Error("First Name already taken!");
+                error.statusCode = 409;
+                throw error;
+            }
             const hashedPassword = await getHashedPassword(password);
             const token = await getCryptoToken();
             const newUser = new User({
